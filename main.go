@@ -1,10 +1,14 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"log"
 	"net"
+
+	"github.com/westside-jpg/Rediz/parser"
+	"github.com/westside-jpg/Rediz/types"
 )
 
 func main() {
@@ -33,20 +37,16 @@ func main() {
 			}
 		}(conn)
 
-		buf := make([]byte, 1024)
 		answer := []byte("+PONG\r\n")
-
 		go func() {
+			request := types.Request{}
 			for {
-				n, err := conn.Read(buf)
-				if err != nil {
-					if err != io.EOF {
-						log.Printf("Listener reading error on port %v: %v", lst.Addr(), err)
-					}
-					break
+				reader := bufio.NewReader(conn)
+				request, err = parser.RequestParser(reader)
+				if err != nil && err == io.EOF {
+					fmt.Print(err)
 				}
-
-				fmt.Printf("Client send: %v\n", string(buf[:n]))
+				fmt.Printf("Request received: %v\n", request)
 
 				_, err = conn.Write(answer)
 				if err != nil {
